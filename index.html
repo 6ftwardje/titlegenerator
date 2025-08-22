@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptoriez Short Titler & Describer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="main-header">
+            <h1><i class="fas fa-video"></i> Cryptoriez Short Titler & Describer</h1>
+            <p>Upload een short/reel → transcript → titel + beschrijving voor YouTube, Instagram & TikTok</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-cog"></i> Voorkeuren</h3>
+
+                    <div class="form-group">
+                        <label for="platforms">Platform(s)</label>
+                        <select id="platforms" multiple>
+                            <option value="YouTube Shorts">YouTube Shorts</option>
+                            <option value="Instagram Reels">Instagram Reels</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Alle" selected>Alle</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clickbait">Clickbait-intensiteit: <span id="clickbait-value">5</span></label>
+                        <input type="range" id="clickbait" min="0" max="10" value="5">
+                        <small>0 = informatief, 10 = zeer agressief</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language">Taal output</label>
+                        <select id="language">
+                            <option value="nl" selected>Nederlands</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="use-emojis" checked>
+                            <span class="toggle-slider"></span>
+                            Emoji's toestaan
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="use-hashtags" checked>
+                            <span class="toggle-slider"></span>
+                            Hashtags toevoegen
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="topic-hint">Context / topic hint (optioneel)</label>
+                        <input type="text" id="topic-hint" value="Crypto/Forex marktupdate of trade breakdown">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="extra-hashtags">Extra hashtags (komma-gescheiden)</label>
+                        <input type="text" id="extra-hashtags"
+                            value="#crypto, #bitcoin, #altcoins, #forex, #trading, #marktupdate, #technischeanalyse">
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="content">
+                <!-- Upload Section -->
+                <section class="upload-section">
+                    <h2><i class="fas fa-upload"></i> Upload & Verwerking</h2>
+
+                    <div class="file-upload-area" id="file-upload-area">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Sleep je video bestand hierheen of klik om te selecteren</p>
+                            <p class="file-types">Ondersteunde formaten: .mp4, .mov, .m4v</p>
+                            <input type="file" id="video-upload" accept=".mp4,.mov,.m4v" style="display: none;">
+                            <button class="upload-btn" onclick="document.getElementById('video-upload').click()">
+                                Bestand selecteren
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="video-preview" class="video-preview" style="display: none;">
+                        <video id="video-player" controls></video>
+                        <button class="generate-btn" id="generate-btn" onclick="processVideo()">
+                            <i class="fas fa-magic"></i> Transcribe & Genereer
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Transcript Section -->
+                <section class="transcript-section">
+                    <h2><i class="fas fa-file-alt"></i> Transcript</h2>
+                    <div id="transcript-container" style="display: none;">
+                        <textarea id="transcript-text" placeholder="Transcript zal hier verschijnen..."
+                            rows="8"></textarea>
+                        <button class="generate-btn" onclick="generateContent()">
+                            <i class="fas fa-rocket"></i> Genereer Titel & Beschrijving
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Results Section -->
+                <section id="results-section" class="results-section" style="display: none;">
+                    <h2><i class="fas fa-trophy"></i> Resultaten</h2>
+
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3><i class="fas fa-heading"></i> Titel</h3>
+                            <input type="text" id="generated-title" readonly>
+                            <button class="copy-btn" onclick="copyToClipboard('generated-title')">
+                                <i class="fas fa-copy"></i> Kopieer
+                            </button>
+                            <button class="download-btn" onclick="downloadText('generated-title', 'titel.txt')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+
+                        <div class="result-card">
+                            <h3><i class="fas fa-align-left"></i> Beschrijving</h3>
+                            <textarea id="generated-description" readonly rows="6"></textarea>
+                            <button class="copy-btn" onclick="copyToClipboard('generated-description')">
+                                <i class="fas fa-copy"></i> Kopieer
+                            </button>
+                            <button class="download-btn"
+                                onclick="downloadText('generated-description', 'beschrijving.txt')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+
+                        <div class="result-card" id="hashtags-card" style="display: none;">
+                            <h3><i class="fas fa-hashtag"></i> Hashtags</h3>
+                            <textarea id="generated-hashtags" readonly rows="4"></textarea>
+                            <button class="copy-btn" onclick="copyToClipboard('generated-hashtags')">
+                                <i class="fas fa-copy"></i> Kopieer
+                            </button>
+                            <button class="download-btn" onclick="downloadText('generated-hashtags', 'hashtags.txt')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p id="loading-text">Bezig met verwerken...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
