@@ -99,7 +99,7 @@ function handleFileUpload(file) {
     showNotification(`Video "${file.name}" succesvol geüpload!`, 'success');
 }
 
-function processVideo() {
+async function processVideo() {
     if (!currentVideoFile) {
         showNotification('Geen video bestand geselecteerd.', 'error');
         return;
@@ -107,27 +107,58 @@ function processVideo() {
 
     showLoadingModal('Audio extraheren en transcriberen...');
 
-    // Simulate processing time
-    setTimeout(() => {
-        hideLoadingModal();
+    try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('video', currentVideoFile);
 
-        // Generate mock transcript (in a real app, this would call the AI API)
+        // Call Netlify function for transcription
+        const response = await fetch('/.netlify/functions/transcribe-video', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+            currentTranscript = result.transcript;
+            
+            // Show transcript section
+            const transcriptContainer = document.getElementById('transcript-container');
+            const transcriptText = document.getElementById('transcript-text');
+
+            transcriptText.value = result.transcript;
+            transcriptContainer.style.display = 'block';
+
+            showNotification('Transcript succesvol gegenereerd!', 'success');
+            transcriptContainer.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            throw new Error(result.error || 'Transcript kon niet worden gegenereerd');
+        }
+
+    } catch (error) {
+        console.error('Transcription error:', error);
+        showNotification(`Fout bij transcriberen: ${error.message}`, 'error');
+        
+        // Fallback to mock transcript for demo purposes
         const mockTranscript = generateMockTranscript();
         currentTranscript = mockTranscript;
-
-        // Show transcript section
+        
         const transcriptContainer = document.getElementById('transcript-container');
         const transcriptText = document.getElementById('transcript-text');
-
+        
         transcriptText.value = mockTranscript;
         transcriptContainer.style.display = 'block';
-
-        showNotification('Transcript succesvol gegenereerd!', 'success');
-
-        // Scroll to transcript section
+        
+        showNotification('Transcript gegenereerd (demo modus)', 'info');
         transcriptContainer.scrollIntoView({ behavior: 'smooth' });
-
-    }, 3000);
+    } finally {
+        hideLoadingModal();
+    }
 }
 
 function generateMockTranscript() {
@@ -142,7 +173,7 @@ function generateMockTranscript() {
     return mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
 }
 
-function generateContent() {
+async function generateContent() {
     if (!currentTranscript) {
         showNotification('Geen transcript beschikbaar.', 'error');
         return;
@@ -150,25 +181,51 @@ function generateContent() {
 
     showLoadingModal('Titel en beschrijving genereren...');
 
-    // Get user preferences
-    const preferences = getUserPreferences();
+    try {
+        // Get user preferences
+        const preferences = getUserPreferences();
 
-    // Simulate AI generation time
-    setTimeout(() => {
-        hideLoadingModal();
+        // Call Netlify function for content generation
+        const response = await fetch('/.netlify/functions/generate-content', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                transcript: currentTranscript,
+                preferences: preferences
+            })
+        });
 
-        // Generate mock content based on preferences
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Display results
+            displayResults(result.content);
+            showNotification('Content succesvol gegenereerd!', 'success');
+        } else {
+            throw new Error(result.error || 'Content kon niet worden gegenereerd');
+        }
+
+    } catch (error) {
+        console.error('Content generation error:', error);
+        showNotification(`Fout bij genereren: ${error.message}`, 'error');
+        
+        // Fallback to mock content for demo purposes
+        const preferences = getUserPreferences();
         const generatedContent = generateMockContent(currentTranscript, preferences);
-
-        // Display results
         displayResults(generatedContent);
-
-        showNotification('Content succesvol gegenereerd!', 'success');
-
+        showNotification('Content gegenereerd (demo modus)', 'info');
+    } finally {
+        hideLoadingModal();
+        
         // Scroll to results
         document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
-
-    }, 2500);
+    }
 }
 
 function getUserPreferences() {

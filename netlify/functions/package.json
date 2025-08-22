@@ -1,0 +1,22 @@
+{
+  "name": "cryptoriez-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for Cryptoriez Short Titler & Describer",
+  "main": "index.js",
+  "dependencies": {
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "netlify",
+    "functions",
+    "openai",
+    "crypto",
+    "transcription"
+  ],
+  "author": "Cryptoriez",
+  "license": "MIT"
+}
