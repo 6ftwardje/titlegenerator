@@ -81,6 +81,14 @@ function isValidVideoFile(file) {
 }
 
 function handleFileUpload(file) {
+    // Check file size before processing
+    const fileSizeMB = Math.round(file.size / (1024 * 1024));
+    
+    if (fileSizeMB > 25) {
+        showFileSizeError(fileSizeMB);
+        return;
+    }
+
     currentVideoFile = file;
 
     // Show video preview
@@ -96,7 +104,53 @@ function handleFileUpload(file) {
     fileUploadArea.style.display = 'none';
     videoPreview.style.display = 'block';
 
-    showNotification(`Video "${file.name}" succesvol geüpload!`, 'success');
+    showNotification(`Video "${file.name}" succesvol geüpload! (${fileSizeMB}MB)`, 'success');
+}
+
+function showFileSizeError(fileSizeMB) {
+    const errorMessage = `Video bestand is te groot (${fileSizeMB}MB). Maximum grootte is 25MB.
+
+Om je video te verwerken:
+1. Comprimeer de video naar onder 25MB
+2. Extraheer alleen audio (veel kleiner)
+3. Gebruik een video compressie tool zoals HandBrake of FFmpeg
+4. Overweeg om lange video's op te splitsen in kortere segmenten
+
+Aanbevolen: Extraheer audio als MP3 (meestal 5-15MB voor typische video's)`;
+
+    // Create a modal with file size guidance
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px; text-align: left;">
+            <h3 style="color: #ef4444; margin-bottom: 1rem;">
+                <i class="fas fa-exclamation-triangle"></i> Bestand te groot
+            </h3>
+            <div style="margin-bottom: 1.5rem;">
+                <p><strong>Huidige bestandsgrootte:</strong> ${fileSizeMB}MB</p>
+                <p><strong>Maximum toegestaan:</strong> 25MB</p>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="color: #ef4444; margin-bottom: 0.5rem;">Oplossingen:</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Comprimeer de video naar onder 25MB</li>
+                    <li>Extraheer alleen audio (veel kleiner)</li>
+                    <li>Gebruik HandBrake, FFmpeg of online tools</li>
+                    <li>Splits lange video's op in kortere segmenten</li>
+                </ul>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="color: #10b981; margin-bottom: 0.5rem;">Aanbeveling:</h4>
+                <p style="margin: 0;">Extraheer audio als MP3 - meestal 5-15MB voor typische video's</p>
+            </div>
+            <button onclick="this.closest('.modal').remove()" class="generate-btn" style="width: 100%;">
+                <i class="fas fa-check"></i> Begrepen
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
 }
 
 async function processVideo() {
@@ -119,7 +173,8 @@ async function processVideo() {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
         const result = await response.json();
@@ -142,7 +197,13 @@ async function processVideo() {
 
     } catch (error) {
         console.error('Transcription error:', error);
-        showNotification(`Fout bij transcriberen: ${error.message}`, 'error');
+        
+        // Check if it's a file size error
+        if (error.message.includes('25MB') || error.message.includes('te groot')) {
+            showFileSizeError(Math.round(currentVideoFile.size / (1024 * 1024)));
+        } else {
+            showNotification(`Fout bij transcriberen: ${error.message}`, 'error');
+        }
         
         // Fallback to mock transcript for demo purposes
         const mockTranscript = generateMockTranscript();

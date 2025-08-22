@@ -40,11 +40,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: openaiApiKey,
-    });
-
     // Parse multipart form data
     const boundary = event.headers['content-type']?.split('boundary=')[1];
     if (!boundary) {
@@ -73,18 +68,34 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Check file size (limit to 25MB for Whisper API)
-    const maxSize = 25 * 1024 * 1024; // 25MB
-    if (videoFile.data.length > maxSize) {
+    // Check file size and provide helpful guidance
+    const fileSizeMB = Math.round(videoFile.data.length / (1024 * 1024));
+    
+    if (fileSizeMB > 25) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
           success: false, 
-          error: 'Video file too large. Maximum size is 25MB.' 
+          error: `Video file is ${fileSizeMB}MB, which exceeds the 25MB limit for OpenAI Whisper API. 
+
+To process your video:
+1. Compress the video to under 25MB
+2. Extract audio only (much smaller)
+3. Use a video compression tool like HandBrake or FFmpeg
+4. Consider splitting long videos into shorter segments
+
+Recommended: Extract audio as MP3 (usually 5-15MB for typical videos)`,
+          fileSize: fileSizeMB,
+          maxSize: 25
         })
       };
     }
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+    });
 
     // Convert to buffer and create file object
     const buffer = Buffer.from(videoFile.data, 'base64');
@@ -105,7 +116,8 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        transcript: transcript
+        transcript: transcript,
+        fileSize: fileSizeMB
       })
     };
 
